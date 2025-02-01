@@ -21,7 +21,7 @@ class Board:
         #self.board[0][0].switchState()
         #self.board[1][0].switchState()
         self.board[1][1].switchState()
-        #self.board[1][2].switchState()
+        self.board[1][2].switchState()
 
     def switchTileRight(self):
         if self.playerPos[0] + 1 < self.boardWidth:

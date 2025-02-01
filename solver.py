@@ -1,3 +1,4 @@
+import sys
 from copy import deepcopy
 
 from board import Board
@@ -15,6 +16,29 @@ class Moves:
     def toStr(self) -> str:
         return "{}: {}".format(self.moveNum,self.moveList)
 
+
+class MapOfMoves:
+    def __init__(self):
+        self.states = {}
+
+    def setMoves(self, key: str, moves: Moves):
+        self.states[key] = moves
+
+    def getMoves(self, key: str):
+        return self.states.get(key)
+
+    def toStr(self) -> str:
+        str = ""
+        for key,val in self.states.items():
+            str += key + ": " + val.toStr() + "\n"
+        return str
+
+    def getLen(self) -> int:
+        return len(self.states)
+
+    def keyExists(self, key: str) -> bool:
+        return key in self.states
+
 class Solver:
     END_STATE = "111,111,111,"
 
@@ -23,12 +47,16 @@ class Solver:
         # visitedStates will be used by the object to keep track of how it got to what board state
         self.visitedStates = None
 
+
+        #Map<String, Moves> visitedStates = new HashMap<>();
+
+
     def printStates(self):
-        for key,val in self.visitedStates.items():
-            print(key, ": ", val.toStr())
+        print(self.visitedStates.toStr())
+        print("{} states found".format(self.visitedStates.getLen()))
 
     def printSolution(self):
-        endState = self.visitedStates.get(Solver.END_STATE)
+        endState = self.visitedStates.getMoves(Solver.END_STATE)
         if endState is not None:
             print(endState.toStr())
         else:
@@ -38,7 +66,8 @@ class Solver:
     # at each point in the graph it can make 4 choices (move up, down, left, right)
     # if it makes a choice that results in a state it has already seen it will stop and reassess
     def solveBoard(self) -> None:
-        self.visitedStates = {}
+        self.visitedStates = MapOfMoves()
+        self.depthLimit = sys.maxsize
 
         # init the prev states with the initial state
         # board -> [number of steps, [list of steps]]
@@ -55,21 +84,30 @@ class Solver:
 
         strState = currBoard.toStr()
         # board states are represented as strings and this is how it is compared
-        seenState = strState in self.visitedStates
+        seenState = self.visitedStates.keyExists(strState)
 
-        if seenState and self.visitedStates[strState].moveNum > moves.moveNum:
-            self.visitedStates[strState] = moves
+        ################################################################################
+        # unoptimized solution without memoization
+        # if seenState and self.visitedStates.getMoves(strState).moveNum > moves.moveNum:
+        #     self.visitedStates.setMoves(strState, moves)
+        # if not seenState:
+        #     self.visitedStates.setMoves(strState, moves)
+        # if moves.moveNum > 8:
+        #     return
+        ################################################################################
+
+        if seenState and self.visitedStates.getMoves(strState).moveNum > moves.moveNum:
+            self.visitedStates.setMoves(strState, moves)
         elif not seenState:
-            self.visitedStates[strState] = moves
+            self.visitedStates.setMoves(strState, moves)
         else: # I have been in this state before with less moves no reason to continue
             return
-
         # a solution has been found
         if strState == Solver.END_STATE:
-
+            self.depthLimit = moves.moveNum
             return
-
-        # currBoardCpy = deepcopy(currBoard)
+        if moves.moveNum >= self.depthLimit:
+            return
 
         # go up
         self.solveBoardRec(
